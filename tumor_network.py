@@ -63,39 +63,25 @@ class MultiTumorNetworkVisualizer:
         self.min_correlation = 0.5
         self.max_genes_per_tumor = 1000
         
-        # Node colors - professional color palette with unique colors for each tumor type
-        self.central_node_color = '#E31A1C'  # 亮紅色for GCH1
+        # Node colors - professional color palette
+        self.central_node_color = '#FF4136'  # Red for GCH1
         self.tumor_colors = {
-            'ACC Tumor': '#1F77B4',   # 深藍色
-            'BRCA Tumor': '#FF7F0E',  # 橙色
-            'ESCA Tumor': '#2CA02C',  # 深綠色
-            'GBM Tumor': '#D62728',   # 紅色
-            'KICH Tumor': '#9467BD',  # 紫色
-            'LGG Tumor': '#8C564B',   # 棕色
-            'PCPG Tumor': '#E377C2',  # 粉色
-            'TGCT Tumor': '#FFC125',  # 亮黃色
-            'UVM Tumor': '#FF00FF',   # 亮紫紅色 (洋紅色)
-            'SARC Tumor': '#BCBD22',  # 黃綠色
-            'OV Tumor': '#17BECF',    # 藍綠色
-            'BLCA Tumor': '#AEC7E8',  # 淺藍色
-            'CESC Tumor': '#FFBB78',  # 淺橙色
-            'COAD Tumor': '#98DF8A',  # 淺綠色
-            'DLBC Tumor': '#FF9896',  # 淺紅色
-            'HNSC Tumor': '#C5B0D5',  # 淺紫色
-            'KIRC Tumor': '#C49C94',  # 淺棕色
-            'KIRP Tumor': '#F7B6D2',  # 淺粉色
-            'LAML Tumor': '#6A3D9A',  # 深紫色
-            'LIHC Tumor': '#DBDB8D',  # 淺黃綠色
-            'LUAD Tumor': '#9EDAE5'   # 淺藍綠色
+            'ACC Tumor': '#3D9970',    # Green
+            'BRCA Tumor': '#0074D9',   # Blue
+            'ESCA Tumor': '#FF851B',   # Orange
+            'GBM Tumor': '#B10DC9',    # Purple
+            'KICH Tumor': '#FF4081',   # Pink
+            'LGG Tumor': '#2ECC40',    # Light green
+            'PCPG Tumor': '#F012BE',   # Magenta
+            'TGCT Tumor': '#01FF70',   # Lime
+            'SARC Tumor': '#85144b',   # Maroon
+            'OV Tumor': '#FFDC00',     # Yellow
+            'BLCA Tumor': '#39CCCC'    # Teal
         }
         
-        # Visual parameters - 顯著增大所有節點尺寸
-        self.node_size_range = (8, 16)  # 增大基因節點大小 (原本5-12)
-        self.edge_width_range = (0.5, 2.5)  # 增加邊寬度
-        
-        # 增強中心節點GCH1和腫瘤節點的視覺屬性
-        self.central_node_size = 45   # 更大的中心節點 (原本30)
-        self.tumor_node_size = 30     # 更大的腫瘤節點 (原本20)
+        # Visual parameters - 減小節點大小範圍
+        self.node_size_range = (3, 10)  # 原本是 (5, 12)
+        self.edge_width_range = (0.3, 1.5)  # 稍微減小邊的寬度
         
         # Output settings
         self.output_dir = 'output'
@@ -111,12 +97,12 @@ class MultiTumorNetworkVisualizer:
         
         # Physics optimization parameters
         self.physics_params = {
-            "gravity": -100000,
-            "central_gravity": 1.5,     # 增強中心引力
-            "spring_length": 100,       # 增加彈簧長度
-            "spring_strength": 0.2,     # 增強彈簧強度
-            "damping": 0.25,            # 降低阻尼以允許更好的穩定
-            "avoid_overlap": 0.5        # 增加節點間距
+            "gravity": -2000,       # 減少重力以避免過度聚集
+            "central_gravity": 0.05, # 減少中心引力
+            "spring_length": 150,    # 增加彈簧長度使節點分散
+            "spring_strength": 0.05, # 減少彈簧強度使連接更鬆散
+            "damping": 0.6,          # 增加阻尼以減少振動
+            "avoid_overlap": 0.8     # 增加節點間間隔
         }
 
     def discover_tumor_types(self, data_dir: str = 'data') -> List[str]:
@@ -190,39 +176,52 @@ class MultiTumorNetworkVisualizer:
             cdn_resources='remote'
         )
         
-        # Configure network display options
+        # Configure network display options - 關閉物理引擎但啟用節點拖曳
         net.toggle_hide_edges_on_drag(False)
-        net.toggle_physics(True)
-        net.toggle_drag_nodes(True)
+        net.toggle_physics(False)  # 關閉物理引擎，防止節點亂動
+        net.toggle_drag_nodes(True)  # 明確啟用節點拖曳
         net.toggle_stabilization(True)
-        net.barnes_hut(
-            gravity=self.physics_params["gravity"],
-            central_gravity=self.physics_params["central_gravity"],
-            spring_length=self.physics_params["spring_length"],
-            spring_strength=self.physics_params["spring_strength"],
-            damping=self.physics_params["damping"],
-        )
         
-        # Add GCH1 as center node with fixed position and enhanced visual properties
+        # 設置交互選項，確保節點可拖曳
+        options_str = """
+        {
+            "interaction": {
+                "dragNodes": true,
+                "dragView": true,
+                "zoomView": true,
+                "selectable": true,
+                "hover": true,
+                "navigationButtons": true
+            },
+            "physics": {
+                "enabled": false
+            }
+        }
+        """
+        net.set_options(options_str)
+        
+        # Add GCH1 as center node with absolute fixed position
         net.add_node(
             'GCH1', 
             label='GCH1', 
-            size=self.central_node_size,
+            size=30,  # 增大中心節點大小
             color=self.central_node_color, 
             title='GCH1 (Central Gene)', 
             shape='dot', 
             borderWidth=4,  # 增加邊框粗細
-            font={'size': 22, 'face': 'Arial', 'color': 'white', 'strokeWidth': 3, 'strokeColor': '#000000'},
-            x=0,  # 確保GCH1位於正中心位置
+            font={'size': 18, 'face': 'Arial', 'color': 'white', 'strokeWidth': 3, 'strokeColor': '#000000'},
+            x=0,
             y=0,
-            fixed=True,
-            physics=False
+            fixed={  # 強制固定位置的詳細設置
+                'x': True,
+                'y': True
+            },
+            physics=False  # 完全禁用物理引擎
         )
         
-        # Initialize tumor positions around GCH1 in a perfect circle
-        tumor_positions = {}
+        # Position tumor nodes radially around GCH1
         num_tumors = len(self.tumor_types)
-        radius = 300  # 增加半徑，讓腫瘤節點間距更大
+        radius = 400  # 增加距離中心的半徑，原本是300
         
         # Collect all genes and their occurrences in tumors
         all_genes = {}  # Format: {gene_id: {tumor_type: pcc, ...}, ...}
@@ -242,41 +241,44 @@ class MultiTumorNetworkVisualizer:
         cross_tumor_genes = {gene: tumors for gene, tumors in all_genes.items() if len(tumors) > 1}
         logger.info(f"Found {len(cross_tumor_genes)} cross-tumor genes")
         
-        # Draw each tumor node in a circle around GCH1
-        logger.info(f"Adding {num_tumors} tumor nodes around GCH1")
+        # Add tumor nodes
+        tumor_positions = {}  # Store tumor node positions
         
         for idx, tumor_type in enumerate(self.tumor_types):
             # Skip if no data for this tumor type
             if tumor_type not in tumor_data:
                 continue
                 
-            # Calculate position on circle - 確保均勻分布在GCH1周圍
+            # Calculate position on circle
             angle = 2 * np.pi * idx / num_tumors
             x = radius * np.cos(angle)
             y = radius * np.sin(angle)
             tumor_positions[tumor_type] = (x, y)  # Save position
             
             # Use default color if tumor type not in color map
-            color = self.tumor_colors.get(tumor_type, '#FF5722')  # 使用橙紅色而非灰色作為默認顏色
+            color = self.tumor_colors.get(tumor_type, '#666666')
             
-            # Add tumor node with enhanced visibility
+            # Add tumor node with absolute fixed position
             net.add_node(
                 tumor_type, 
                 label=tumor_type, 
-                size=self.tumor_node_size,
+                size=20,  # 增大腫瘤節點大小
                 color=color,
                 title=f"{tumor_type}", 
                 shape='dot',
                 borderWidth=3,  # 增加邊框粗細
-                font={'size': 16, 'face': 'Arial', 'color': 'white', 'strokeWidth': 2, 'strokeColor': '#000000'},
+                font={'size': 14, 'face': 'Arial', 'color': 'white', 'strokeWidth': 2, 'strokeColor': '#000000'},
                 x=x,
                 y=y,
-                fixed=True,
-                physics=False
+                fixed={  # 強制固定位置的詳細設置
+                    'x': True,
+                    'y': True
+                },
+                physics=False  # 完全禁用物理引擎
             )
             
-            # Connect tumor node to GCH1 with thicker edge
-            net.add_edge('GCH1', tumor_type, width=3, color='rgba(150,150,150,0.8)')
+            # Connect tumor node to GCH1
+            net.add_edge('GCH1', tumor_type, width=2, color='rgba(150,150,150,0.8)')
             
             # Initialize gene count for this tumor
             self.gene_counts[tumor_type] = 0
@@ -299,13 +301,11 @@ class MultiTumorNetworkVisualizer:
             ]
             
             # Add tumor-specific genes
-            spiral_factor = 0.2
-            # Check if DataFrame is empty before sorting
+            spiral_factor = 0.35  # 增加螺旋因子，原本是0.2
+            # Check if DataFrame is empty to avoid sorting error
             if not tumor_specific_genes.empty:
                 tumor_specific_genes = tumor_specific_genes.sort_values('PCC', ascending=False)
-                logger.info(f"{tumor_type}: Adding {len(tumor_specific_genes)} tumor-specific genes")
-            else:
-                logger.info(f"{tumor_type}: No tumor-specific genes to add (DataFrame is empty)")
+            logger.info(f"{tumor_type}: Adding {len(tumor_specific_genes)} tumor-specific genes")
             
             for gene_idx, (_, gene_row) in enumerate(tumor_specific_genes.iterrows()):
                 gene_id = gene_row['Gene Symbol']
@@ -319,9 +319,9 @@ class MultiTumorNetworkVisualizer:
                 width_min, width_max = self.edge_width_range
                 width = width_min + (pcc - self.min_correlation) * (width_max - width_min)
                 
-                # Spiral layout
-                spiral_angle = 2 * np.pi * gene_idx / 20  # 20 genes per turn
-                spiral_distance = 50 + spiral_factor * gene_idx * 2
+                # Spiral layout - 增加基因間距
+                spiral_angle = 2 * np.pi * gene_idx / 15  # 減少每圈的基因數，原本是20
+                spiral_distance = 80 + spiral_factor * gene_idx * 3  # 增加起始距離和增長速度
                 gene_x = x + spiral_distance * np.cos(spiral_angle)
                 gene_y = y + spiral_distance * np.sin(spiral_angle)
                 
@@ -335,10 +335,11 @@ class MultiTumorNetworkVisualizer:
                     size=size, 
                     color={'background': color, 'border': color},
                     shape='dot',
-                    borderWidth=2,  # 增加邊框粗細
-                    font={'size': 9},  # 增大字體
+                    borderWidth=1,
+                    font={'size': 6},  # 減小字體，原本是8
                     x=gene_x,
                     y=gene_y
+                    # 移除固定位置設置，允許拖曳
                 )
                 
                 # Connect gene to tumor
@@ -366,9 +367,15 @@ class MultiTumorNetworkVisualizer:
             # Get main tumor position and color
             main_x, main_y = tumor_positions[main_tumor]
             
-            # Calculate position - between main tumor and GCH1
-            gene_x = main_x * 0.6  # Closer to center
-            gene_y = main_y * 0.6
+            # Calculate position - 改進跨腫瘤基因位置計算
+            gene_x = main_x * 0.5  # 靠近中心點更多，原本是0.6
+            gene_y = main_y * 0.5  # 靠近中心點更多，原本是0.6
+            
+            # 添加隨機偏移以減少重疊
+            offset_x = np.random.uniform(-40, 40)
+            offset_y = np.random.uniform(-40, 40)
+            gene_x += offset_x
+            gene_y += offset_y
             
             # Calculate node size based on highest correlation
             size_min, size_max = self.node_size_range
@@ -386,15 +393,14 @@ class MultiTumorNetworkVisualizer:
                 gene_id,
                 label=gene_id,
                 title=tooltip,
-                size=size + 4,  # 增大跨腫瘤基因節點大小
-                color={'background': '#FF9800', 'border': '#E65100'},  # 橙色高亮
-                shape='diamond',  # 使用鑽石形狀區分跨腫瘤基因
-                borderWidth=3,  # 增加邊框粗細
-                font={'size': 10, 'face': 'Arial', 'color': 'black'},  # 增大字體
+                size=size + 2,  # Slightly enlarge cross-tumor gene node
+                color={'background': '#FF9800', 'border': '#E65100'},  # Use orange to highlight
+                shape='diamond',  # Use diamond shape to distinguish cross-tumor gene
+                borderWidth=2,
+                font={'size': 7},  # 減小字體，原本是9
                 x=gene_x,
-                y=gene_y,
-                fixed=False,
-                physics=True
+                y=gene_y
+                # 移除固定位置設置，允許拖曳
             )
             
             # Add connections for each associated tumor type
@@ -429,136 +435,94 @@ class MultiTumorNetworkVisualizer:
         
         print(f"Total genes: {len(all_genes)}")
         print(f"Tumor-specific genes: {tumor_specific_count}")
-        print(f"Cross-tumor genes: {multi_tumor_count}")
+        print(f"Cross-tumor gene: {multi_tumor_count}")
         
         for tumor, count in self.gene_counts.items():
             logger.info(f"  {tumor}: {count} genes")
             print(f"  {tumor}: {count} genes")
         
-        # Add JavaScript to fix only the GCH1 node after initial stabilization
-        stabilize_script = """
+        # Add initialization script to fix all nodes but allow dragging
+        init_script = f"""
         <script type="text/javascript">
-        document.addEventListener('DOMContentLoaded', function() {
-            // After DOM is loaded, wait for network to initialize
-            setTimeout(function() {
-                try {
-                    if (window.network) {
-                        console.log("Network object found, configuring node mobility...");
+        document.addEventListener('DOMContentLoaded', function() {{
+            // 在DOM載入後立即固定腫瘤節點和GCH1
+            setTimeout(function() {{
+                try {{
+                    if (window.network) {{
+                        console.log("Network object found, fixing tumor nodes and GCH1...");
+                        const nodesDataset = network.body.data.nodes;
                         
-                        // Run initial stabilization
-                        network.stabilize(300);  // 增加穩定化迭代次數
+                        // 只固定腫瘤節點和GCH1的位置
+                        nodesDataset.forEach(function(node) {{
+                            if (node.id === 'GCH1' || node.id.includes('Tumor')) {{
+                                nodesDataset.update({{
+                                    id: node.id,
+                                    fixed: {{
+                                        x: true,
+                                        y: true
+                                    }},
+                                    physics: false
+                                }});
+                            }}
+                        }});
                         
-                        // After stabilization, fix GCH1 and tumor nodes
-                        setTimeout(function() {
-                            // Get the nodes dataset
-                            const nodesDataset = network.body.data.nodes;
-                            
-                            // Iterate through nodes
-                            nodesDataset.forEach(function(node) {
-                                // 確保GCH1在中心
-                                if (node.id === 'GCH1') {
-                                    nodesDataset.update({
-                                        id: node.id,
-                                        fixed: true,
-                                        x: 0,
-                                        y: 0
-                                    });
-                                }
-                                // 固定所有包含"Tumor"的節點
-                                else if (node.id.includes('Tumor')) {
-                                    nodesDataset.update({
-                                        id: node.id,
-                                        fixed: true 
-                                    });
-                                }
-                                // 所有基因節點可拖曳
-                                else {
-                                    nodesDataset.update({
-                                        id: node.id,
-                                        fixed: false 
-                                    });
-                                }
-                            });
-                            
-                            console.log("Finished configuring node mobility.");
-                            
-                            // 確保GCH1在視圖中央
-                            network.moveTo({
-                                position: {x: 0, y: 0},
-                                scale: 0.8, // 略微縮小以顯示整個網絡
-                                animation: {
-                                    duration: 1000,
-                                    easingFunction: "easeInOutQuad"
-                                }
-                            });
-                        }, 1000);
-                    }
-                } catch (e) {
-                    console.error("Error configuring node mobility:", e);
-                }
-            }, 1000);
-        });
+                        // 確保所有基因節點可拖曳
+                        nodesDataset.forEach(function(node) {{
+                            if (node.id !== 'GCH1' && !node.id.includes('Tumor')) {{
+                                nodesDataset.update({{
+                                    id: node.id,
+                                    fixed: {{
+                                        x: false,
+                                        y: false
+                                    }}
+                                }});
+                            }}
+                        }});
+                        
+                        // 關閉物理引擎
+                        network.setOptions({{ physics: false }});
+                        
+                        // 確保節點可拖曳
+                        network.setOptions({{ 
+                            interaction: {{ 
+                                dragNodes: true 
+                            }} 
+                        }});
+                        
+                        console.log("Tumor nodes and GCH1 fixed. Gene nodes can be dragged freely.");
+                        document.getElementById('physics-status').textContent = 'Tumor Nodes Fixed - Drag Gene Nodes Freely';
+                        document.getElementById('physics-status').className = 'status-indicator frozen';
+                    }}
+                }} catch(e) {{
+                    console.error("Error fixing nodes:", e);
+                }}
+            }}, 500);
+        }});
         </script>
         """
         
         # Add the script to the HTML
-        net.html += stabilize_script
+        net.html += init_script
         
-        # Physics and interaction options as a direct JavaScript string
-        options_str = """
-        {
-            "physics": {
-                "enabled": true,
-                "barnesHut": {
-                    "gravitationalConstant": -80000,
-                    "centralGravity": 0.3,
-                    "springLength": 95,
-                    "springConstant": 0.04,
-                    "damping": 0.09,
-                    "avoidOverlap": 0.1
-                },
-                "minVelocity": 0.75
-            },
-            "interaction": {
-                "dragNodes": true,
-                "dragView": true,
-                "zoomView": true,
-                "navigationButtons": false,
-                "hover": true
-            }
-        }
-        """
-        
-        # Try to set options using different approaches
-        try:
-            net.set_options(options_str)
-        except Exception as e:
-            logger.warning(f"Failed to set network options with set_options: {e}")
-        
-        # Add direct JavaScript to ensure proper interaction settings
-        # This is more reliable than relying on the PyVis set_options method
-        interaction_script = """
+        # Simplify stabilization message
+        stabilize_script = """
         <script type="text/javascript">
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(function() {
+        setTimeout(function() {
+            try {
                 if (window.network) {
-                    // Set proper interaction options directly
-                    network.setOptions({
-                        interaction: {
-                            dragNodes: true,
-                            dragView: true,
-                            zoomView: true,
-                            hover: true
-                        }
-                    });
-                    console.log("Interaction options set through direct JavaScript");
+                    // 初始穩定化
+                    network.stabilize(100);
+                    console.log("Initial stabilization done.");
                 }
-            }, 1500);
-        });
+            } catch(e) {
+                console.error("Error in stabilization:", e);
+            }
+        }, 1000);
         </script>
         """
-        # Always add the script to ensure interaction settings are applied
-        net.html += interaction_script
+        
+        # Add stabilization script
+        net.html += stabilize_script
         
         return net
 
@@ -876,11 +840,11 @@ class MultiTumorNetworkVisualizer:
         # Add control buttons
         control_buttons = '''
         <div class="control-buttons">
-            <button id="cluster-btn">Cluster Nodes</button>
-            <button id="expand-btn">Expand Nodes</button>
-            <button id="reset-btn">Reset Layout</button>
-            <button id="freeze-btn">Freeze Positions</button>
-            <button id="unfreeze-btn">Unfreeze Positions</button>
+            <button id="cluster-btn">Reposition Nodes</button>
+            <button id="expand-btn">Expand Layout</button>
+            <button id="reset-btn">Reset & Stabilize</button>
+            <button id="freeze-btn">Fix All Positions</button>
+            <button id="unfreeze-btn">Enable Dragging</button>
         </div>
         '''
         
@@ -891,7 +855,7 @@ class MultiTumorNetworkVisualizer:
         let network = null;
         let nodesDataset = null;
         let edgesDataset = null;
-        let isPhysicsEnabled = true;
+        let isPhysicsEnabled = false;  // 物理引擎預設關閉
         let savedPositions = {};
         
         // Wait for the network to be created
@@ -915,8 +879,11 @@ class MultiTumorNetworkVisualizer:
                             nodesDataset = network.body.data.nodes;
                             edgesDataset = network.body.data.edges;
                             
+                            // Save initial positions immediately for reset functionality
+                            saveCurrentNodePositions();
+                            
                             // Update status indicator to match initial state
-                            updatePhysicsStatus(true);
+                            updatePhysicsStatus(false);
                             
                             // Initialize control buttons
                             initControlButtons();
@@ -957,8 +924,11 @@ class MultiTumorNetworkVisualizer:
                     nodesDataset = network.body.data.nodes;
                     edgesDataset = network.body.data.edges;
                     
+                    // Save initial positions immediately for reset functionality
+                    saveCurrentNodePositions();
+                    
                     // Update status indicator to match initial state
-                    updatePhysicsStatus(true);
+                    updatePhysicsStatus(false);
                     
                     // Initialize control buttons
                     initControlButtons();
@@ -997,10 +967,10 @@ class MultiTumorNetworkVisualizer:
             const statusEl = document.getElementById('physics-status');
             if (statusEl) {
                 if (isEnabled) {
-                    statusEl.textContent = 'Physics: Active';
+                    statusEl.textContent = 'Physics: Active, Stabilizing...';
                     statusEl.className = 'status-indicator active';
                 } else {
-                    statusEl.textContent = 'Physics: Frozen';
+                    statusEl.textContent = 'Physics: Off, Drag Nodes Freely';
                     statusEl.className = 'status-indicator frozen';
                 }
             }
@@ -1031,6 +1001,9 @@ class MultiTumorNetworkVisualizer:
                 const nodeIds = Object.keys(savedPositions);
                 
                 nodeIds.forEach(nodeId => {
+                    // 跳過 GCH1 和腫瘤節點，它們已經是固定的
+                    if (nodeId === 'GCH1' || nodeId.includes("Tumor")) return;
+                    
                     const pos = savedPositions[nodeId];
                     if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') {
                         nodesDataset.update({
@@ -1045,7 +1018,7 @@ class MultiTumorNetworkVisualizer:
                     }
                 });
                 
-                console.log("Applied fixed positions to nodes");
+                console.log("Applied fixed positions to gene nodes only");
             } catch (e) {
                 console.error("Error applying fixed positions:", e);
             }
@@ -1061,6 +1034,9 @@ class MultiTumorNetworkVisualizer:
                 const ids = nodesDataset.getIds();
                 
                 ids.forEach(id => {
+                    // 跳過 GCH1 和腫瘤節點，保持它們固定
+                    if (id === 'GCH1' || id.includes("Tumor")) return;
+                    
                     nodesDataset.update({
                         id: id,
                         fixed: {
@@ -1070,7 +1046,7 @@ class MultiTumorNetworkVisualizer:
                     });
                 });
                 
-                console.log("Released fixed positions");
+                console.log("Released fixed positions on gene nodes only");
             } catch (e) {
                 console.error("Error releasing fixed positions:", e);
             }
@@ -1138,37 +1114,39 @@ class MultiTumorNetworkVisualizer:
             }
         }
         
-        // Reset layout
+        // Reset layout - 確保所有節點還原到初始位置但保持固定
         function resetLayout() {
-            if (!network) {
-                console.warn("Cannot reset layout: network not available");
+            if (!network || !nodesDataset) {
+                console.warn("Cannot reset layout: network or nodes not available");
                 return;
             }
             
             try {
-                // Reset to original physics settings
-                network.physics.options.forceAtlas2Based.gravitationalConstant = -150;
-                network.physics.options.forceAtlas2Based.centralGravity = 0.15;
-                network.physics.options.forceAtlas2Based.springLength = 100;
-                network.physics.options.forceAtlas2Based.springConstant = 0.15;
-                network.physics.options.forceAtlas2Based.damping = 0.3;
-                network.physics.options.forceAtlas2Based.avoidOverlap = 0.3;
-                
-                // Update physics and stabilize
-                network.setOptions({physics: network.physics.options});
-                
-                // Make sure physics is enabled
-                if (!isPhysicsEnabled) {
-                    network.setOptions({ physics: true });
-                    isPhysicsEnabled = true;
-                    updatePhysicsStatus(true);
-                    releaseFixedPositions();
+                // 使用初始保存的位置重置所有節點
+                if (Object.keys(savedPositions).length > 0) {
+                    Object.keys(savedPositions).forEach(function(nodeId) {
+                        const pos = savedPositions[nodeId];
+                        nodesDataset.update({
+                            id: nodeId,
+                            x: pos.x,
+                            y: pos.y,
+                            fixed: {
+                                x: true,
+                                y: true
+                            }
+                        });
+                    });
                 }
                 
-                network.stabilize(300);
-                
-                // Reset zoom
+                // 重置縮放
                 network.fit();
+                
+                // 確保物理引擎關閉
+                network.setOptions({ physics: false });
+                isPhysicsEnabled = false;
+                updatePhysicsStatus(false);
+                
+                console.log("Reset complete. All nodes restored to original positions.");
             } catch (e) {
                 console.error("Error resetting layout:", e);
             }
@@ -1176,22 +1154,36 @@ class MultiTumorNetworkVisualizer:
         
         // Freeze node positions
         function freezePositions() {
-            if (!network) {
-                console.warn("Cannot freeze positions: network not available");
+            if (!network || !nodesDataset) {
+                console.warn("Cannot freeze positions: network or nodes not available");
                 return;
             }
             
             try {
-                // Save current node positions before freezing
+                // 儲存所有節點當前位置
                 saveCurrentNodePositions();
                 
-                // Apply fixed positions to nodes
-                applyFixedPositions();
+                // 將所有基因節點設為固定位置
+                const ids = nodesDataset.getIds();
+                ids.forEach(id => {
+                    // 修改所有節點為固定位置
+                    const pos = savedPositions[id];
+                    if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') {
+                        nodesDataset.update({
+                            id: id,
+                            x: pos.x,
+                            y: pos.y,
+                            fixed: {
+                                x: true,
+                                y: true
+                            }
+                        });
+                    }
+                });
                 
-                // Disable physics
-                network.setOptions({ physics: false });
-                isPhysicsEnabled = false;
+                // 物理引擎已關閉，更新狀態顯示
                 updatePhysicsStatus(false);
+                console.log("All nodes frozen in place");
             } catch (e) {
                 console.error("Error freezing positions:", e);
             }
@@ -1199,19 +1191,27 @@ class MultiTumorNetworkVisualizer:
         
         // Unfreeze node positions
         function unfreezePositions() {
-            if (!network) {
-                console.warn("Cannot unfreeze positions: network not available");
+            if (!network || !nodesDataset) {
+                console.warn("Cannot unfreeze positions: network or nodes not available");
                 return;
             }
             
             try {
-                // Release fixed positions
-                releaseFixedPositions();
+                const ids = nodesDataset.getIds();
                 
-                // Enable physics
-                network.setOptions({ physics: true });
-                isPhysicsEnabled = true;
+                ids.forEach(id => {
+                    // 所有節點都可以自由移動
+                    nodesDataset.update({
+                        id: id,
+                        fixed: {
+                            x: false,
+                            y: false
+                        }
+                    });
+                });
+                
                 updatePhysicsStatus(true);
+                console.log("All nodes can now be dragged freely");
             } catch (e) {
                 console.error("Error unfreezing positions:", e);
             }
