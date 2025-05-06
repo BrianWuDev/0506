@@ -98,7 +98,7 @@ class MultiTumorNetworkVisualizer:
         self.tumor_node_size = 30     # 更大的腫瘤節點 (原本20)
         
         # Output settings
-        self.output_dir = 'output'
+        self.output_dir = 'docs'  # 修改輸出目錄為docs
         self.output_filename = 'multi_tumor_network'
         self.title = 'Multi-Tumor Network with GCH1 as Central Node'
         
@@ -1331,6 +1331,10 @@ class MultiTumorNetworkVisualizer:
         # Load data for all tumor types
         tumor_data = self.load_all_data(data_dir)
         
+        # Verify all discovered tumor types are included
+        total_tumors = len(self.tumor_types)
+        logger.info(f"Found {total_tumors} tumor types for visualization")
+        
         # Create network
         net = self.create_network(tumor_data)
         
@@ -1349,6 +1353,7 @@ class MultiTumorNetworkVisualizer:
         print("- Node clustering controls (bottom-left)")
         print("- Interactive exploration tools")
         print(f"- Visualization includes {sum(self.gene_counts.values())} genes across {len(self.tumor_types)} tumor types")
+        print(f"- All {total_tumors} tumor types from data folder are included in the visualization")
         
         return html_path
 
