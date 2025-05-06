@@ -85,6 +85,10 @@ dmypy.json
 
 # Project-specific files
 output/
-*.html
+# 排除所有 HTML 文件，但保留 docs 目錄中的 HTML 文件
+/*.html
+/output/*.html
+# 不排除 docs 目錄中的 HTML 文件
+!docs/*.html
 *.png
 *.log 
